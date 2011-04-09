@@ -1,4 +1,7 @@
-all: index server
+all: util index server
+
+util:
+	$(MAKE) -C util
 
 index:
 	$(MAKE) -C index
@@ -6,4 +9,4 @@ index:
 server:
 	$(MAKE) -C server
 
-.PHONY: index server
+.PHONY: util index server
