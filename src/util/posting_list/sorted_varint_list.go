@@ -1,4 +1,4 @@
-package sorted_varint_list
+package posting_list
 
 import "fmt"
 import "io"

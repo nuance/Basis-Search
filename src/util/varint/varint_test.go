@@ -3,7 +3,7 @@ package varint
 import "testing"
 
 type sizeTest struct {
-	in, out int
+	in, out VarInt
 }
 
 var sizeTests = []sizeTest{
@@ -18,15 +18,15 @@ var sizeTests = []sizeTest{
 
 func TestSize(t *testing.T) {
 	for _, dt := range sizeTests {
-		v := Size(dt.in)
-		if v != dt.out {
+		v := dt.in.Size()
+		if VarInt(v) != dt.out {
 			t.Errorf("Size(%d) = %d, want %d.", dt.in, v, dt.out)
 		}
 	}
 }
 
 type encodeTest struct {
-	in  int
+	in  VarInt
 	out []byte
 }
 
@@ -45,10 +45,10 @@ func TestEncode(t *testing.T) {
 	for _, dt := range encodeTests {
 		buffer := make([]byte, len(dt.out))
 
-		v := Encode(dt.in, buffer)
+		v := dt.in.Write(buffer)
 
-		if v != Size(dt.in) {
-			t.Errorf("Encode(%d, buffer) = %d, want size %d.", dt.in, v, Size(dt.in))
+		if v != dt.in.Size() {
+			t.Errorf("Encode(%d, buffer) = %d, want size %d.", dt.in, v, dt.in.Size())
 		}
 
 		for idx, v := range buffer {
@@ -57,7 +57,7 @@ func TestEncode(t *testing.T) {
 			}
 		}
 
-		read, decoded := Decode(buffer)
+		read, decoded := Read(buffer)
 
 		if read != v {
 			t.Errorf("Decode(Encode(%d)) bytes = %d, want %d", dt.in, read, v)

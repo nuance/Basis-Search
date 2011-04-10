@@ -1,6 +1,10 @@
 package varint
 
-func Size(value uint64) uint {
+import "os"
+
+type VarInt uint64
+
+func (value VarInt) Size() uint {
 	value >>= 6
 
 	if value == 0 {
@@ -20,7 +24,7 @@ func Size(value uint64) uint {
 	panic("Can't get here")
 }
 
-func Encode(value uint64, target []byte) int {
+func (value VarInt) Write(target []byte) uint {
 	// encode an int, assuming the first (current) byte has the last 7
 	// bits allocated for storage, and all following bytes have the
 	// full byte allocated
@@ -32,7 +36,7 @@ func Encode(value uint64, target []byte) int {
 		return 1
 	}
 
-	idx := 1
+	idx := uint(1)
 	for {
 		target[idx] = byte(value & 0x7F)
 		value >>= 7
@@ -48,11 +52,27 @@ func Encode(value uint64, target []byte) int {
 	panic("Can't get here")
 }
 
-func Decode(src []byte) (bytesRead uint, value uint64) {
+func End(src []byte) (end uint, err os.Error) {
+	for idx, byte := range src {
+		if idx == 0 {
+			if byte&0x40 == 0x40 {
+				return 1, nil
+			}
+		} else {
+			if byte&0x80 == 0x80 {
+				return uint(idx+1), nil
+			}
+		}
+	}
+
+	return 0, os.NewError("Couldn't find end")
+}
+
+func Read(src []byte) (bytesRead uint, value VarInt) {
 	// decode an int, assuming the first (current) byte has the last 7
 	// bits allocated for storage, and all following bytes have the
 	// full byte allocated
-	value = uint64(src[0] & 0x3F)
+	value = VarInt(src[0] & 0x3F)
 
 	if src[0]&0x40 == 0x40 {
 		return 1, value
@@ -61,7 +81,7 @@ func Decode(src []byte) (bytesRead uint, value uint64) {
 	position := uint(1)
 	shift := uint(6)
 	for {
-		value += (uint64(src[position]&0x7F) << shift)
+		value += (VarInt(src[position]&0x7F) << shift)
 
 		if src[position]&0x80 == 0x80 {
 			return position + 1, value
