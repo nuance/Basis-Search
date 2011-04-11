@@ -12,6 +12,20 @@ const (
 	SkipLayoutNext
 )
 
+func (pl *PostingList) addSkip(doc int) (err os.Error) {
+	numBlocks := len(pl.Raw)
+	if numBlocks+1+SKIP_PAYLOAD >= cap(pl.Raw) {
+		return os.NewError("Out of space")
+	}
+
+	pl.Raw = pl.Raw[0:numBlocks+1+SKIP_PAYLOAD]
+
+	// Mark the block as uninitialized
+	pl.Raw[numBlocks] = SKIP_UNINITIALIZED
+
+	return nil
+}
+
 func (pl *PostingList) updateSkip(src, target Block) {
 	pl.Raw[src.start] = SKIP_INITIALIZED
 
