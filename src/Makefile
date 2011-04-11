@@ -1,12 +1,31 @@
-all: util index server
+include $(GOROOT)/src/Make.inc
 
-util:
-	$(MAKE) -C util
+CMDS=\
+	server/index \
+	server/merger
 
-index:
-	$(MAKE) -C index
+PKGS=\
+	util/varint \
+	util/posting_list
 
-server:
-	$(MAKE) -C server
+all: make
 
-.PHONY: util index server
+make: $(addsuffix .install, $(PKGS)) $(addsuffix .make, $(CMDS))
+clean: $(addsuffix .nuke, $(PKGS)) $(addsuffix .clean, $(CMDS))
+
+%.install:
+	$(MAKE) -C $* install
+
+# compile all packages before any command
+%.make: $(addsuffix .install, $(PKGS))
+	$(MAKE) -C $*
+
+# establish dependancies between packages
+util/posting_list.install: util/varint.install
+
+%.clean:
+	$(MAKE) -C $* clean
+
+%.nuke:
+	$(MAKE) -C $* nuke
+
