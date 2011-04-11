@@ -1,9 +1,22 @@
+package posting_list
+
+import "os"
+import "rand"
+
+const SKIP_PAYLOAD = 12
+const SKIP_UNINITIALIZED = 0
+const SKIP_INITIALIZED = 1
+
+const (
+	SkipLayoutRandom = iota
+	SkipLayoutNext
+)
 
 func (pl *PostingList) updateSkip(src, target Block) {
 	pl.Raw[src.start] = SKIP_INITIALIZED
 
-	writeInt(pl.Raw[1:], target.nextBlockOffset)
-	writeInt(pl.Raw[5:], target.payload)
+	writeUInt(pl.Raw[1:], target.nextBlockOffset)
+	writeUInt64(pl.Raw[5:], target.nextDoc)
 }
 
 func (pl *PostingList) setupSkipsRandom() {
@@ -43,9 +56,9 @@ func (pl *PostingList) setupSkipsNext() {
 
 func (pl *PostingList) BuildSkips(layoutOption int) (err os.Error) {
 	switch layoutOption {
-	case SkiplayoutRandom:
+	case SkipLayoutRandom:
 		pl.setupSkipsRandom()
-	case SkiplayoutNext:
+	case SkipLayoutNext:
 		pl.setupSkipsNext()
 	default:
 		return os.NewError("Invalid layout option")
