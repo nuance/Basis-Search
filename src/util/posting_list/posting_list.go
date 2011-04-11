@@ -74,10 +74,12 @@ type Block struct {
 	payload []byte
 }
 
-func readBlock(bytes []byte, idx uint, lastDoc uint64, payloadEnd func([]byte) (uint, os.Error)) (uint, Block) {
+func (pl PostingList) readBlock(idx uint, lastDoc uint64) (uint, Block) {
+	bytes := pl.Raw[idx:]
+
 	if bytes[0]&blockTypeDoc == blockTypeDoc {
 		docSize, docOffset := varint.Read(bytes)
-		payloadSize, _ := payloadEnd(bytes[docSize:])
+		payloadSize, _ := pl.PayloadEnd(bytes[docSize:])
 		payload := bytes[docSize:docSize+payloadSize]
 
 		doc := uint64(docOffset) + lastDoc
@@ -100,7 +102,7 @@ func (pl PostingList) blocks(visit func(Block)) {
 	// walk through the blocks
 	numBlocks := uint(len(pl.Raw))
 	for i < numBlocks {
-		r, block := readBlock(pl.Raw[i:], i, lastDoc, pl.PayloadEnd)
+		r, block := pl.readBlock(i, lastDoc)
 
 		lastDoc = block.doc
 
