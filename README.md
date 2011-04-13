@@ -1,12 +1,4 @@
 Basis Search
 ============
 
-Component-based search. Hold your text index on one node, your geo
-index on another, and your attributes on a third. Queries are executed
-on all relevant classes of nodes, and results are streamed back
-through an aggregator, which collects query statistics and selects the
-top results.
-
-Aggegrators need to have fast access to any attributes not queries
-over that you're interested on collecting statistics about.
-
+A bunch of search data structures implemented in go. This isn't complete - it's mostly just posting lists + posting list query code, at the moment, but I hope to turn this into a library of the building blocks necessary to implement something like solr, but in a sane language.
