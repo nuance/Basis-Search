@@ -4,10 +4,6 @@ import "os"
 import list "container/list"
 import "sync"
 
-type Error struct {
-	os.ErrorString
-}
-
 type Allocation struct {
 	Raw []byte
 
