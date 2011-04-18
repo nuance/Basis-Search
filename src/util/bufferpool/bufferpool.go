@@ -1,6 +1,5 @@
 package bufferpool
 
-import "os"
 import list "container/list"
 import "sync"
 
@@ -41,7 +40,7 @@ func (b *buffer) alloc() (*Allocation) {
 			return nil
 		}
 
-		chunk := make([]byte, b.chunkSize)
+		chunk := make([]byte, 0, b.chunkSize)
 		b.chunks = append(b.chunks, chunk)
 
 		return &Allocation{chunk, b, len(b.chunks)-1}
@@ -52,6 +51,8 @@ func (b *buffer) alloc() (*Allocation) {
 }
 
 func (b *buffer) free(a *Allocation) {
+	// reset the slice
+	a.Raw = a.Raw[:0]
 	b.freeList.PushBack(a)
 }
 
