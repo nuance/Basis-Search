@@ -1,4 +1,4 @@
-all: varint posting_list buffer_pool
+all: varint posting_list bufferpool
 
 varint:
 	$(MAKE) -C varint
@@ -6,8 +6,8 @@ varint:
 posting_list:
 	$(MAKE) -C posting_list
 
-buffer_pool:
-	$(MAKE) -C buffer_pool
+bufferpool:
+	$(MAKE) -C bufferpool
 
-.PHONY: varint posting_list buffer_pool
+.PHONY: varint posting_list bufferpool
 

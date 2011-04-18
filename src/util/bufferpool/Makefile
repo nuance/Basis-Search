@@ -1,7 +1,7 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=basis/util/buffer_pool
+TARG=basis/util/bufferpool
 GOFILES=\
-	buffer_pool.go
+	bufferpool.go
 
 include $(GOROOT)/src/Make.pkg
