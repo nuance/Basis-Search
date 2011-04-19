@@ -56,6 +56,10 @@ func (b *buffer) free(a *Allocation) {
 	b.freeList.PushBack(a)
 }
 
+func New(MaxBufSize uint64) *BufferPool {
+	return &BufferPool{[]*buffer{}, MaxBufSize}
+}
+
 func (p *BufferPool) Alloc(size uint64) *Allocation {
 	for _, buffer := range p.buffers {
 		if buffer.chunkSize == size {
