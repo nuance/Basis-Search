@@ -35,7 +35,10 @@ func (idx *TextIndex) Query(tokens []string) <-chan TextResult {
 			dfs = append(dfs, float64(idx.Docs[word].Stats().DocCount))
 		}
 
-		for docs := range posting.Intersection(pls) {
+		cDoc := make(chan posting.Docs, 100)
+		posting.Intersection(pls, cDoc)
+
+		for docs := range cDoc {
 			tfidf := 0.0
 
 			for idx, tf := range docs.Payloads {

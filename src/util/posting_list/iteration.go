@@ -88,67 +88,61 @@ type Docs struct {
 	Payloads [][]byte
 }
 
-func Intersection(pls []*PostingList) <-chan Docs {
-	out := make(chan Docs)
+func Intersection(pls []*PostingList, out <-chan Docs) {
+	defer close(out)
 
-	go func(out chan<- Docs) {
-		defer close(out)
+	if len(pls) == 0 {
+		return
+	}
 
-		if len(pls) == 0 {
-			return
-		}
+	iters := []*PostingListIterator{}
 
-		iters := []*PostingListIterator{}
+	for _, pl := range pls {
+		iters = append(iters, NewIter(pl))
+	}
 
-		for _, pl := range pls {
-			iters = append(iters, NewIter(pl))
-		}
+	next := uint64(0)
+	blocks := make([]Block, len(iters))
 
-		next := uint64(0)
-		blocks := make([]Block, len(iters))
+	for {
+		changed := false
 
-		for {
-			changed := false
+		for idx, it := range iters {
+			if it.finished {
+				return
+			}
 
-			for idx, it := range iters {
-				if it.finished {
-					return
-				}
+			if next != it.b.doc {
+				changed = true
 
-				if next != it.b.doc {
-					changed = true
+				if next < it.b.doc {
+					next = it.b.doc
+				} else if next > it.b.doc {
+					_, err := it.Seek(next)
 
+					// Prevent an extra loop
 					if next < it.b.doc {
 						next = it.b.doc
-					} else if next > it.b.doc {
-						_, err := it.Seek(next)
+					}
 
-						// Prevent an extra loop
-						if next < it.b.doc {
-							next = it.b.doc
-						}
-
-						if err != nil {
-							return
-						}
+					if err != nil {
+						return
 					}
 				}
-
-				blocks[idx] = it.b
 			}
 
-			if !changed {
-				payloads := make([][]byte, len(blocks))
-				for idx, doc := range blocks {
-					payloads[idx] = doc.payload
-				}
-
-				out <- Docs{blocks[0].doc, payloads}
-
-				next += 1
-			}
+			blocks[idx] = it.b
 		}
-	} (out)
 
-	return out
+		if !changed {
+			payloads := make([][]byte, len(blocks))
+			for idx, doc := range blocks {
+				payloads[idx] = doc.payload
+			}
+
+			out <- Docs{blocks[0].doc, payloads}
+
+			next += 1
+		}
+	}
 }
