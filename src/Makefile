@@ -2,6 +2,7 @@ include $(GOROOT)/src/Make.inc
 
 PKGS=\
 	util/varint \
+	util/bufferpool \
 	match/postinglist
 
 all: make
@@ -16,7 +17,7 @@ clean: $(addsuffix .nuke, $(PKGS)) $(addsuffix .clean, $(CMDS))
 %.make: $(addsuffix .install, $(PKGS))
 	$(MAKE) -C $*
 
-# establish dependancies between packages
+# establish dependencies between packages
 match/postinglist.install: util/varint.install
 
 %.clean:

@@ -1,8 +1,8 @@
-include $(GOROOT)/src/Make.inc
+SUBDIRS = text geo attribute
 
-TARG=basis/index
-GOFILES=\
-	geo.go \
-	text.go
+all: $(SUBDIRS)
 
-include $(GOROOT)/src/Make.pkg
+%:
+	$(MAKE) -C $<
+
+.PHONY: $(SUBDIRS)

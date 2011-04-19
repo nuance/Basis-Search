@@ -1,10 +1,9 @@
-all: varint bufferpool
+SUBDIRS = varint bufferpool
 
-varint:
-	$(MAKE) -C varint
+all: $(SUBDIRS)
 
-bufferpool:
-	$(MAKE) -C bufferpool
+%:
+	$(MAKE) -C $<
 
-.PHONY: varint bufferpool
+.PHONY: $(SUBDIRS)
 

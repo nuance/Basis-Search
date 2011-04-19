@@ -1,6 +1,8 @@
-all: postinglist
+SUBDIRS = postinglist
 
-postinglist:
-	$(MAKE) -C postinglist
+all: $(SUBDIRS)
 
-.PHONY: postinglist
+%:
+	$(MAKE) -C $<
+
+.PHONY: $(SUBDIRS)
