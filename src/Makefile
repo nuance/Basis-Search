@@ -1,12 +1,8 @@
 include $(GOROOT)/src/Make.inc
 
-CMDS=\
-	server/index \
-	server/merger
-
 PKGS=\
 	util/varint \
-	util/posting_list
+	match/postinglist
 
 all: make
 
@@ -21,7 +17,7 @@ clean: $(addsuffix .nuke, $(PKGS)) $(addsuffix .clean, $(CMDS))
 	$(MAKE) -C $*
 
 # establish dependancies between packages
-util/posting_list.install: util/varint.install
+match/postinglist.install: util/varint.install
 
 %.clean:
 	$(MAKE) -C $* clean

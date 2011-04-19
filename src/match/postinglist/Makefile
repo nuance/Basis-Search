@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=basis/util/posting_list
+TARG=basis/match/postinglist
 GOFILES=\
 	posting_list.go \
 	common.go \

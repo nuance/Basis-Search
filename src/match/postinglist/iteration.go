@@ -88,7 +88,7 @@ type Docs struct {
 	Payloads [][]byte
 }
 
-func Intersection(pls []*PostingList, out <-chan Docs) {
+func Intersection(pls []*PostingList, out chan<- Docs) {
 	defer close(out)
 
 	if len(pls) == 0 {

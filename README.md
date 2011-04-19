@@ -18,4 +18,14 @@ Search services need a few basic things.
 
 There are things that they don't need.
 
- * Language Analysis - Lucene does this. Well. But it's still a mistake. If you need it, build an analysis service on lucene, or using NLTK w/ python. If a good library is written for go, then use it, but it's definitely out of the scope of this project (and extremely useful as a standalone tool).
+ * Language Analysis - Lucene does this. Well. But it's still a mistake. If you need it, build an analysis service on lucene, or use NLTK w/ python. If a good library is written for go, then use it, but it's definitely out of the scope of this project (and extremely useful as a standalone tool).
+
+Code Layout
+-----------
+
+    src/ - the main source for the library
+      util/ - Utility functions (variable-sized ints, buffer pool etc.)
+	  match/ - Structures that store matches (posting lists, bitsets) and algorithms for merging / intersecting them 
+      index/ - Structures for looking up matches (trie, quad tree, b+ tree)
+
+    example/ - an example of a simple text + attribute search server
