@@ -1,5 +1,6 @@
 package varint
 
+import "rand"
 import "testing"
 
 type sizeTest struct {
@@ -66,5 +67,80 @@ func TestEncode(t *testing.T) {
 		if decoded != dt.in {
 			t.Errorf("Decode(Encode(%d)) = %d", dt.in, decoded)
 		}
+	}
+}
+
+func generateTests(iterations int) []VarInt{
+	t := make([]VarInt, iterations)
+	for idx := 0; idx < iterations; idx++ {
+		v := VarInt(rand.Int31())
+		t = append(t, v)
+	}
+
+	return t
+}
+
+func BenchmarkSize(b *testing.B) {
+	b.StopTimer()
+	t := generateTests(10000)
+	b.StartTimer()
+
+	for idx := 0; idx < b.N; idx++ {
+		v := t[idx % 10000]
+		v.Size()
+	}
+	b.StopTimer()
+}
+
+func BenchmarkWrite(b *testing.B) {
+	b.StopTimer()
+	t := generateTests(10000)
+	buffer := make([]byte, 5)
+	b.SetBytes(5)
+	b.StartTimer()
+
+	for idx := 0; idx < b.N; idx++ {
+		v := t[idx % 10000]
+		v.Write(buffer)
+	}
+}
+
+func BenchmarkRead(b *testing.B) {
+	b.StopTimer()
+	t := generateTests(10000)
+	buffers := [][]byte{}
+	bytes := uint(0)
+
+	for idx := 0; idx < 10000; idx++ {
+		buffer := make([]byte, 5)
+		v := t[idx]
+		bytes += v.Write(buffer)
+		buffers = append(buffers, buffer)
+	}
+	b.SetBytes(5)
+
+	b.StartTimer()
+	for idx := 0; idx < b.N; idx++ {
+		Read(buffers[idx % 10000])
+	}
+}
+
+func BenchmarkEnd(b *testing.B) {
+	b.StopTimer()
+	t := generateTests(10000)
+	buffers := [][]byte{}
+	bytes := uint(0)
+
+	for idx := 0; idx < 10000; idx++ {
+		buffer := make([]byte, 5)
+		v := t[idx]
+		bytes += v.Write(buffer)
+		buffers = append(buffers, buffer)
+	}
+	b.SetBytes(5)
+
+	b.StartTimer()
+	for idx := 0; idx < b.N; idx++ {
+		Read(buffers[idx % 10000])
 	}
 }
