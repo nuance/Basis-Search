@@ -30,7 +30,7 @@ func (pl *PostingList) updateSkip(src, target Block) {
 	pl.Raw[src.start] = SKIP_INITIALIZED
 
 	writeUInt(pl.Raw[1:], target.nextBlockOffset)
-	writeUInt64(pl.Raw[5:], target.nextDoc)
+	writeUInt64(pl.Raw[5:], uint64(target.nextDoc))
 }
 
 func (pl *PostingList) setupSkipsRandom() {

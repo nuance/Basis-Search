@@ -1,6 +1,6 @@
 package posting_list
 
-import "os"
+import match "basis/match"
 
 type PostingListIterator struct {
 	pl       *PostingList
@@ -26,7 +26,15 @@ func (i *PostingListIterator) advance() {
 	i.finished = (i.last > i.size)
 }
 
-func (i *PostingListIterator) Next() (Block, os.Error) {
+func (i *PostingListIterator) Current() match.DocId {
+	return i.b.doc
+}
+
+func (i *PostingListIterator) Finished() bool {
+	return i.finished
+}
+
+func (i *PostingListIterator) Next() (match.DocId, bool) {
 	if i.finished {
 		panic("Called Next on a finished iterator")
 	}
@@ -36,20 +44,16 @@ func (i *PostingListIterator) Next() (Block, os.Error) {
 		i.advance()
 	}
 
-	if i.finished {
-		return i.b, os.NewError("Finished")
-	}
-
-	return i.b, nil
+	return i.b.doc, i.finished
 }
 
-func (i *PostingListIterator) Seek(target uint64) (Block, os.Error) {
+func (i *PostingListIterator) Seek(target match.DocId) (match.DocId, bool) {
 	if i.finished {
 		panic("Called Seek on a finished iterator")
 	} else if i.b.doc > target {
 		panic("Can't seek backwards")
 	} else if i.b.doc == target {
-		return i.b, nil
+		return i.b.doc, false
 	}
 
 	for !i.finished && i.b.doc < target {
@@ -76,73 +80,5 @@ func (i *PostingListIterator) Seek(target uint64) (Block, os.Error) {
 		i.advance()
 	}
 
-	if i.finished {
-		return i.b, os.NewError("Finished")
-	}
-
-	return i.b, nil
-}
-
-type Docs struct {
-	Doc uint64
-	Payloads [][]byte
-}
-
-func Intersection(pls []*PostingList, out chan<- Docs) {
-	defer close(out)
-
-	if len(pls) == 0 {
-		return
-	}
-
-	iters := []*PostingListIterator{}
-
-	for _, pl := range pls {
-		iters = append(iters, NewIter(pl))
-	}
-
-	next := uint64(0)
-	blocks := make([]Block, len(iters))
-
-	for {
-		changed := false
-
-		for idx, it := range iters {
-			if it.finished {
-				return
-			}
-
-			if next != it.b.doc {
-				changed = true
-
-				if next < it.b.doc {
-					next = it.b.doc
-				} else if next > it.b.doc {
-					_, err := it.Seek(next)
-
-					// Prevent an extra loop
-					if next < it.b.doc {
-						next = it.b.doc
-					}
-
-					if err != nil {
-						return
-					}
-				}
-			}
-
-			blocks[idx] = it.b
-		}
-
-		if !changed {
-			payloads := make([][]byte, len(blocks))
-			for idx, doc := range blocks {
-				payloads[idx] = doc.payload
-			}
-
-			out <- Docs{blocks[0].doc, payloads}
-
-			next += 1
-		}
-	}
+	return i.b.doc, i.finished
 }

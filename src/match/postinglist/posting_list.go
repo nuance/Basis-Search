@@ -3,11 +3,11 @@ package posting_list
 import "fmt"
 import "os"
 import varint "basis/util/varint"
+import match "basis/match"
 
 type PostingList struct {
 	Raw        []byte
-	MaxId      uint64
-	PayloadEnd func([]byte) (uint, os.Error)
+	MaxId      match.DocId
 }
 
 // Encoding scheme:
@@ -15,7 +15,7 @@ type PostingList struct {
 // following bits: 7 bit varint, followed by overflow (stored
 // least-significant bits first)
 
-func (pl *PostingList) Add(doc uint64, payload Payload) (err os.Error) {
+func (pl *PostingList) Add(doc match.DocId) (err os.Error) {
 	numBlocks := uint(len(pl.Raw))
 	if numBlocks > 0 && doc < pl.MaxId {
 		return os.NewError("doc isn't larger than current max doc")
@@ -24,16 +24,13 @@ func (pl *PostingList) Add(doc uint64, payload Payload) (err os.Error) {
 	diff := varint.VarInt(doc - pl.MaxId)
 
 	size := diff.Size()
-	size += payload.Size()
 
 	if size + numBlocks >= uint(cap(pl.Raw)) {
 		return os.NewError("Out of space")
 	}
 
 	pl.Raw = pl.Raw[0:numBlocks+size]
-
-	used := diff.Write(pl.Raw[numBlocks:])
-	used += payload.Write(pl.Raw[numBlocks+used:])
+	diff.Write(pl.Raw[numBlocks:])
 
 	// Set the high bit
 	pl.Raw[numBlocks] = blockTypeDoc | pl.Raw[numBlocks]
@@ -51,39 +48,34 @@ type Block struct {
 	// always 1 for non-skips
 	nextBlockOffset uint
 	// the doc id for this block (same as the last for skip blocks)
-	doc uint64
+	doc match.DocId
 
 	// for skip blocks
-	nextDoc uint64
-
-	// for data blocks
-	payload []byte
+	nextDoc match.DocId
 }
 
-func (pl PostingList) readBlock(idx uint, lastDoc uint64) (uint, Block) {
+func (pl PostingList) readBlock(idx uint, lastDoc match.DocId) (uint, Block) {
 	bytes := pl.Raw[idx:]
 
 	if bytes[0]&blockTypeDoc == blockTypeDoc {
 		docSize, docOffset := varint.Read(bytes)
-		payloadSize, _ := pl.PayloadEnd(bytes[docSize:])
-		payload := bytes[docSize:docSize+payloadSize]
 
-		doc := uint64(docOffset) + lastDoc
-		data := Block{idx, false, 1, doc, 0, payload}
+		doc := match.DocId(docOffset) + lastDoc
+		data := Block{idx, false, 1, doc, 0}
 
-		return docSize + payloadSize, data
+		return docSize, data
 	}
 
 	nextBlockOffset := readUInt(bytes[1:])
 	nextDocOffset := readUInt64(bytes[5:])
 
-	data := Block{idx, true, nextBlockOffset, lastDoc, lastDoc + nextDocOffset, nil}
+	data := Block{idx, true, nextBlockOffset, lastDoc, match.DocId(uint64(lastDoc) + nextDocOffset)}
 	return 1 + SKIP_PAYLOAD, data
 }
 
 func (pl PostingList) blocks(visit func(Block)) {
 	i := uint(0)
-	lastDoc := uint64(0)
+	lastDoc := match.DocId(0)
 
 	// walk through the blocks
 	numBlocks := uint(len(pl.Raw))
@@ -110,15 +102,10 @@ func (pl PostingList) skips() []Block {
 	return skips
 }
 
-type Doc struct {
-	Doc uint64
-	Payload []byte
-}
-
-func (pl PostingList) Docs(visit func(Doc)) {
+func (pl PostingList) Docs(visit func(match.DocId)) {
 	pl.blocks(func(b Block) {
 		if !b.isSkip {
-			visit(Doc{b.doc, b.payload})
+			visit(b.doc)
 		}
 	})
 }
@@ -126,9 +113,9 @@ func (pl PostingList) Docs(visit func(Doc)) {
 func (pl PostingList) Stats() Stats {
 	docCount := 0
 
-	pl.Docs(func (Doc) { docCount += 1 })
+	pl.Docs(func (match.DocId) { docCount += 1 })
 
-	return Stats{docCount, pl.MaxId}
+	return Stats{docCount, uint64(pl.MaxId)}
 }
 
 func (b Block) initialized() bool {
@@ -148,11 +135,11 @@ func (pl *PostingList) String() string {
 
 func (b Block) String() string {
 	if b.isSkip && b.initialized() {
-		return fmt.Sprintf("Skip - doc %d @ idx %d", b.payload, b.start+b.nextBlockOffset)
+		return fmt.Sprintf("Skip - doc %d @ idx %d", b.nextDoc, b.start+b.nextBlockOffset)
 	} else if b.isSkip {
 		return fmt.Sprintf("Skip - uninitialized")
 	} else {
-		return fmt.Sprintf("Data - doc %d, payload %d", b.doc, b.payload)
+		return fmt.Sprintf("Data - doc %d", b.doc)
 	}
 
 	panic("can't get here")

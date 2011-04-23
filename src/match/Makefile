@@ -1,4 +1,4 @@
-SUBDIRS = postinglist
+SUBDIRS = match postinglist bitset
 
 all: $(SUBDIRS)
 
