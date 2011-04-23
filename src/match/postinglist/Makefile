@@ -2,7 +2,7 @@ include $(GOROOT)/src/Make.inc
 
 TARG=basis/match/postinglist
 GOFILES=\
-	posting_list.go \
+	postinglist.go \
 	common.go \
 	skips.go \
 	iteration.go

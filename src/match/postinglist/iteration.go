@@ -1,4 +1,4 @@
-package posting_list
+package postinglist
 
 import match "basis/match"
 

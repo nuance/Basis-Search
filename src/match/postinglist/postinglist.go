@@ -1,4 +1,4 @@
-package posting_list
+package postinglist
 
 import "fmt"
 import "os"
@@ -8,6 +8,35 @@ import match "basis/match"
 type PostingList struct {
 	Raw        []byte
 	MaxId      match.DocId
+}
+
+func FromBytes(raw []byte) *PostingList {
+	maxId := readUInt64(raw)
+	raw = raw[8:]
+
+	n, rawLen := varint.Read(raw)
+	raw = raw[n:]
+	raw = raw[:rawLen]
+
+	return &PostingList{raw, match.DocId(maxId)}
+}
+
+func (pl *PostingList) Size() int {
+	return len(pl.Raw) + int(varint.VarInt(len(pl.Raw)).Size()) + 8
+}
+
+func (pl *PostingList) ToBytes(dst []byte) {
+	if cap(dst) < pl.Size() {
+		panic("dst is too small")
+	}
+
+	writeUInt64(dst, uint64(pl.MaxId))
+	dst = dst[8:]
+
+	written := varint.VarInt(len(pl.Raw)).Write(dst[8:])
+	dst = dst[written:]
+
+	copy(dst, pl.Raw)
 }
 
 // Encoding scheme:

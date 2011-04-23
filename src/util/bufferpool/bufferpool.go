@@ -3,11 +3,15 @@ package bufferpool
 import list "container/list"
 import "sync"
 
+type Reference struct {
+	Buffer, Chunk int
+}
+
 type Allocation struct {
 	Raw []byte
+	Ref Reference
 
 	buf *buffer
-	chunk int
 }
 
 type buffer struct {
@@ -17,6 +21,7 @@ type buffer struct {
 
 	chunkSize uint64
 	maxSize uint64
+	chunkNum int
 }
 
 type BufferPool struct {
@@ -25,8 +30,8 @@ type BufferPool struct {
 	MaxBufSize uint64
 }
 
-func newBuffer(chunkSize, maxSize uint64) *buffer {
-	return &buffer{[][]byte{}, list.New(), new(sync.Mutex), chunkSize, maxSize}
+func newBuffer(chunkNum int, chunkSize, maxSize uint64) *buffer {
+	return &buffer{[][]byte{}, list.New(), new(sync.Mutex), chunkSize, maxSize, chunkNum}
 }
 
 func (b *buffer) alloc() (*Allocation) {
@@ -43,7 +48,8 @@ func (b *buffer) alloc() (*Allocation) {
 		chunk := make([]byte, 0, b.chunkSize)
 		b.chunks = append(b.chunks, chunk)
 
-		return &Allocation{chunk, b, len(b.chunks)-1}
+		ref := Reference{b.chunkNum, len(b.chunks)-1}
+		return &Allocation{chunk, ref, b}
 	} 
 
 	// Pop the first item off the free list
@@ -71,10 +77,17 @@ func (p *BufferPool) Alloc(size uint64) *Allocation {
 	}
 
 	// Create a new buffer
-	buf := newBuffer(size, p.MaxBufSize)
+	buf := newBuffer(len(p.buffers), size, p.MaxBufSize)
 	p.buffers = append(p.buffers, buf)
 
 	return buf.alloc()
+}
+
+func (p *BufferPool) Find(ref Reference) *Allocation {
+	buffer := p.buffers[ref.Buffer]
+	raw := buffer.chunks[ref.Chunk]
+
+	return &Allocation{raw, ref, buffer}
 }
 
 func (a *Allocation) Free() {
